@@ -8,18 +8,18 @@ from twisted.internet.serialport import SerialPort
 from memberDb import *
 import serial
 
-class Echo(LineReceiver):
+class RfidReader(LineReceiver):
 	def processData(self, data):
-		if data[0]=='CARD':
-			self.handleCard(data[1:])
-		if data[0]=='STRIKER':
-			print data[1]
+		subject, data = data[0], data[1:]
+		if subject=='CARD':
+			self.handle_card(data)
+		elif subject=='STRIKER':
+			self.handle_striker(data)
 
 	def connectionMade(self):
 		print 'Serial connection established.'
 
 	def lineReceived(self, line):
-		print line
 		data = line.split()
 		self.processData(data)
 
@@ -27,26 +27,29 @@ class Echo(LineReceiver):
 		 # Send unlock sequence
                  self.transport.write("UNLOCK\r\n")
 
-	def handleCard(self, data):
-		if data[0]=='CODE':	
-			print data[1]
+	def handle_card(self, data):
+		subject, data = data[0], data[1:]
+		if subject=='CODE':	
+			code = data[0]
+			print code
 			# Check tag number
 			db = MemberDb()
-			if db.checkCard(data[1]):
+			if db.checkCard(code):
+				print 'Access Granted - ', code
 				self.unlock()
 			else:
-				print 'Card Denied'
-			if data[0]=='REMOVED':
-				print 'REMOVED'
-
-
-
+				print 'Access Denied - ', code
+		elif subject=='REMOVED':
+			print 'REMOVED'
+	
+	def handle_striker(self, data):
+		print data[0]
 
 
 if __name__=='__main__':
 	
 	try:
-		SerialPort(Echo(), '/dev/ttyUSB0', reactor, 9600)
+		SerialPort(RfidReader(), '/dev/ttyUSB0', reactor, 9600)
 		reactor.run()
 
 	except serial.serialutil.SerialException:

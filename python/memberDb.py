@@ -12,6 +12,6 @@ class MemberDb:
 
 	def checkCard(self, tagId):
 		p = (tagId, )
-		c.execute("SELECT * FROM cards WHERE cardId=? AND disabled=0", p)
+		c.execute("SELECT * FROM cards WHERE lower(cardId)=lower(?) AND disabled=0", p)
 		return c.fetchone() != None
 
